@@ -1,4 +1,9 @@
 #include <SoftwareSerial.h>
+#include <IRremote.h>  // 使用IRRemote函数库
+
+const int RECV_PIN = 6;  // 红外接收器的 OUTPUT 引脚接在 PIN6 接口 定义RECV_PIN变量为PIN6接口
+IRrecv irrecv(RECV_PIN); // 设置RECV_PIN定义的端口为红外信号接收端口
+decode_results results;    // 定义results变量为红外结果存放位置
 
 SoftwareSerial mySerial(8, 9); // RX, TX
 
@@ -8,7 +13,10 @@ const int RightMotorPin1 = 4;
 const int RightMotorPin2 = 5;
 const int LeftSpeedPin = 10;
 const int RightSpeedPin = 11;
-int LedPin = 13;
+
+const int SoundPin = 7;
+const int LedPin = 13;
+const int PrPin = A0;
 String comdata= "";
 String hexdata= "";
 char inChar;
@@ -18,11 +26,13 @@ int SpeedAmount = 1;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(9600);  // 开启串口，波特率为9600
   Serial.println("Start!");
   // set the data rate for the SoftwareSerial port
   mySerial.begin(9600);
   mySerial.println("Hello, mySerial.");
+  
+  irrecv.enableIRIn(); // Start the receiver
   
   pinMode(LeftMotorPin1, OUTPUT); //声明各引脚模式
   pinMode(LeftMotorPin2, OUTPUT);
@@ -31,16 +41,22 @@ void setup()
   pinMode(LeftSpeedPin, OUTPUT);
   pinMode(RightSpeedPin, OUTPUT);
   pinMode(LedPin, OUTPUT);
+  pinMode(SoundPin,INPUT);
 }
 
 void loop() //主体
 {
-  delay(2);
   // if(Serial.available())  //判断是否有数据发送过来
   // (Speed/5) * 255
   analogWrite(LeftSpeedPin, Speed * 51);
   analogWrite(RightSpeedPin, Speed * 51);
-
+  
+  IR();
+  
+  //PR();
+  
+  Sound();
+  
   while (mySerial.available())
   {
     //读入之后将字符串，串接到comdata上面。
@@ -212,4 +228,51 @@ void LED()
   digitalWrite(LedPin, LOW);
 }
 
+//IR
+void IR()
+{
+  if (irrecv.decode(&results)) {   // 解码成功，把数据放入results变量中
+    // 把数据输入到串口
+    Serial.print("irCode: ");            
+    Serial.print(results.value, HEX); // 显示红外编码
+    Serial.print(",  bits: ");           
+    Serial.println(results.bits); // 显示红外编码位数
+    irrecv.resume();    // 继续等待接收下一组信号
+  }  
+  delay(100); //延时600毫秒，做一个简单的消抖
+}
+
+//Photoresistor
+void PR()
+{
+  int val = analogRead(PrPin);    //从传感器读取值
+  Serial.print("PR_val:");
+  Serial.println(val);
+  Serial.println("#######################");
+  
+  if(val >= 512){      //512=2.5V，想让传感器敏感一些的时候，把数值调高，想让传感器迟钝的时候把数值调低。
+    digitalWrite(LedPin, HIGH); //当val小于512(2.5V)的时候，led亮。
+  }
+  else{
+    digitalWrite(LedPin, LOW);
+  }
+}
+
+//Sound Sensor
+void Sound()
+{
+  int sound =digitalRead(SoundPin);
+  Serial.print("Sound:");
+  Serial.println(sound);
+  Serial.println("@@@@@@@@@@@@@@@@@@@@");
+  if (sound == 0)                             //判断n是否为高电平，如果是执行下面的语句，不是则跳过。
+  {
+    digitalWrite(LedPin,HIGH);
+    delay(1000);
+  }
+  else 
+  {
+    digitalWrite(LedPin,LOW);
+  }
+}
 
