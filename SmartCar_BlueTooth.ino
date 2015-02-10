@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 #include <IRremote.h>  // 使用IRRemote函数库
 
-const int RECV_PIN = 6;  // 红外接收器的 OUTPUT 引脚接在 PIN6 接口 定义RECV_PIN变量为PIN6接口
+int RECV_PIN = 6;  // 红外接收器的 OUTPUT 引脚接在 PIN6 接口 定义RECV_PIN变量为PIN6接口
 IRrecv irrecv(RECV_PIN); // 设置RECV_PIN定义的端口为红外信号接收端口
 decode_results results;    // 定义results变量为红外结果存放位置
 
@@ -19,9 +19,10 @@ const int LedPin = 13;
 const int PrPin = A0;
 String comdata= "";
 String hexdata= "";
+String IR_RecvChar = "";
 char inChar;
 int timer =200;
-int Speed = 5;
+int Speed = 3;
 int SpeedAmount = 1;
 
 void setup()
@@ -47,53 +48,18 @@ void setup()
 void loop() //主体
 {
   // if(Serial.available())  //判断是否有数据发送过来
-  // (Speed/5) * 255
-  analogWrite(LeftSpeedPin, Speed * 51);
-  analogWrite(RightSpeedPin, Speed * 51);
+
+  Speed();
+  
+  BlueTooth();
   
   IR();
   
   //PR();
   
-  Sound();
+  //Sound();
   
-  while (mySerial.available())
-  {
-    //读入之后将字符串，串接到comdata上面。
-    hexdata = hexdata + String(mySerial.read(),HEX);
-    comdata = comdata + mySerial.read();
-    inChar = mySerial.read();
-    
-    //延时一会，让串口缓存准备好下一个数字，不延时会导致数据丢失，
-    delay(20);
-    //Serial.print("comdata:");
-    //Serial.println(comdata);
-    //Serial.print("hexdata:");
-    //Serial.println(hexdata);
-    Serial.print("inChar:");
-    Serial.println(inChar);
-    Serial.println("----------------");
-    Serial.print("Speed:");
-    Serial.println(Speed);
-    Serial.println("*****************");
-    
-    switch(inChar)
-    {
-      case '1':Forward();break;
-      case '2':Backward();break;
-      case '3':Left_Forward();break;
-      case '4':Right_Forward();break;
-      case '5':Left_Backward();break;
-      case '6':Right_Backward();break;
-      case 'Q':Speed_Up();break;
-      case 'R':Speed_Down();break;
-      case 'S':Halt();break;
-      case 'T':Route_O();break;
-      case 'U':Route_Z();break;
-      //case '1':LED();break;
-      default:Halt();
-    }
-  }      
+     
 }
 
 // 前进
@@ -228,6 +194,56 @@ void LED()
   digitalWrite(LedPin, LOW);
 }
 
+//BlueTooth
+void BlueTooth()
+{
+  while (mySerial.available())
+  {
+    //读入之后将字符串，串接到comdata上面。
+    hexdata = hexdata + String(mySerial.read(),HEX);
+    comdata = comdata + mySerial.read();
+    inChar = mySerial.read();
+    
+    //延时一会，让串口缓存准备好下一个数字，不延时会导致数据丢失，
+    delay(20);
+    //Serial.print("comdata:");
+    //Serial.println(comdata);
+    //Serial.print("hexdata:");
+    //Serial.println(hexdata);
+    Serial.print("inChar:");
+    Serial.println(inChar);
+    Serial.println("----------------");
+    Serial.print("Speed:");
+    Serial.println(Speed);
+    Serial.println("*****************");
+    
+    switch(inChar)
+    {
+      case '1':Forward();break;
+      case '2':Backward();break;
+      case '3':Left_Forward();break;
+      case '4':Right_Forward();break;
+      case '5':Left_Backward();break;
+      case '6':Right_Backward();break;
+      case 'Q':Speed_Up();break;
+      case 'R':Speed_Down();break;
+      case 'S':Halt();break;
+      case 'T':Route_O();break;
+      case 'U':Route_Z();break;
+      //case '1':LED();break;
+      default:Halt();
+    }
+  } 
+}
+
+//Speed
+void Speed()
+{
+  // (Speed/5) * 255
+  analogWrite(LeftSpeedPin, Speed * 51);
+  analogWrite(RightSpeedPin, Speed * 51);
+}
+
 //IR
 void IR()
 {
@@ -237,6 +253,35 @@ void IR()
     Serial.print(results.value, HEX); // 显示红外编码
     Serial.print(",  bits: ");           
     Serial.println(results.bits); // 显示红外编码位数
+    IR_RecvChar = IR_RecvChar + String(results.value,HEX);
+    Serial.print("IR_RecvChar:");
+    Serial.println(IR_RecvChar);
+    
+    if (IR_RecvChar == 'A0F5DAD5')
+    {
+      Forward();
+    }
+    else if (IR_RecvChar == '9866EE37')
+    {
+      Backward();
+    }
+    else if (IR_RecvChar == 'C3CBC8B9')
+    {
+      Left_Forward();
+    }
+    else if (IR_RecvChar == '24F7CCFB')
+    {
+      Right_Forward();
+    }
+    else if (IR_RecvChar == 'EAB9A49B')
+    {
+      Halt();
+    }
+    else
+    {
+      Halt();
+    }
+    
     irrecv.resume();    // 继续等待接收下一组信号
   }  
   delay(100); //延时600毫秒，做一个简单的消抖
