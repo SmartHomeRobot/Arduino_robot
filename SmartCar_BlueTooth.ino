@@ -17,9 +17,9 @@ const int RightSpeedPin = 11;
 const int SoundPin = 7;
 const int LedPin = 13;
 const int PrPin = A0;
-String comdata= "";
-String hexdata= "";
-String IR_RecvChar = "";
+String comdata;
+String hexdata;
+String IR_RecvChar;
 char inChar;
 int timer =200;
 int Speed = 3;
@@ -49,7 +49,7 @@ void loop() //主体
 {
   // if(Serial.available())  //判断是否有数据发送过来
 
-  Speed();
+  // Speed();
   
   BlueTooth();
   
@@ -164,10 +164,11 @@ void Route_Z()
   }
 }
 
+/*
 //Speed_Up
 void Speed_Up()
 {
-  Speed += SpeedAmount;
+  Speed = Speed + SpeedAmount;
   if (Speed == 0 || Speed == 5) 
   {
     SpeedAmount = -SpeedAmount;
@@ -178,13 +179,22 @@ void Speed_Up()
 //Speed_Down
 void Speed_Down()
 {
-  Speed -= SpeedAmount;
+  Speed = Speed - SpeedAmount;
   if (Speed == 0 || Speed == 5) 
   {
     SpeedAmount = -SpeedAmount;
    }
   delay(100);
 }
+
+//Speed
+void Speed()
+{
+  // (Speed/5) * 255
+  analogWrite(LeftSpeedPin, Speed * 51);
+  analogWrite(RightSpeedPin, Speed * 51);
+}
+*/
 
 //LED
 void LED()
@@ -213,9 +223,9 @@ void BlueTooth()
     Serial.print("inChar:");
     Serial.println(inChar);
     Serial.println("----------------");
-    Serial.print("Speed:");
-    Serial.println(Speed);
-    Serial.println("*****************");
+    //Serial.print("Speed:");
+    //Serial.println(Speed);
+    //Serial.println("*****************");
     
     switch(inChar)
     {
@@ -225,8 +235,8 @@ void BlueTooth()
       case '4':Right_Forward();break;
       case '5':Left_Backward();break;
       case '6':Right_Backward();break;
-      case 'Q':Speed_Up();break;
-      case 'R':Speed_Down();break;
+      //case 'Q':Speed_Up();break;
+      //case 'R':Speed_Down();break;
       case 'S':Halt();break;
       case 'T':Route_O();break;
       case 'U':Route_Z();break;
@@ -236,13 +246,7 @@ void BlueTooth()
   } 
 }
 
-//Speed
-void Speed()
-{
-  // (Speed/5) * 255
-  analogWrite(LeftSpeedPin, Speed * 51);
-  analogWrite(RightSpeedPin, Speed * 51);
-}
+
 
 //IR
 void IR()
@@ -253,33 +257,41 @@ void IR()
     Serial.print(results.value, HEX); // 显示红外编码
     Serial.print(",  bits: ");           
     Serial.println(results.bits); // 显示红外编码位数
-    IR_RecvChar = IR_RecvChar + String(results.value,HEX);
+
+    IR_RecvChar = String(results.value,HEX);
+    IR_RecvChar.toUpperCase();
     Serial.print("IR_RecvChar:");
     Serial.println(IR_RecvChar);
-    
-    if (IR_RecvChar == 'A0F5DAD5')
+
+    if (IR_RecvChar == "33B8A05F")
     {
       Forward();
+      Serial.println("==Forward");
     }
-    else if (IR_RecvChar == '9866EE37')
+    else if (IR_RecvChar == "33B8609F")
     {
       Backward();
+      Serial.println("Backward");
     }
-    else if (IR_RecvChar == 'C3CBC8B9')
+    else if (IR_RecvChar == "33B8E01F")
     {
       Left_Forward();
+      Serial.println("Left");
     }
-    else if (IR_RecvChar == '24F7CCFB')
+    else if (IR_RecvChar == "33B810EF")
     {
       Right_Forward();
+      Serial.println("Right");
     }
-    else if (IR_RecvChar == 'EAB9A49B')
+    else if (IR_RecvChar == "33B820DF")
     {
       Halt();
+      Serial.println("Halt");
     }
     else
     {
       Halt();
+      Serial.println("Else");
     }
     
     irrecv.resume();    // 继续等待接收下一组信号
@@ -320,4 +332,5 @@ void Sound()
     digitalWrite(LedPin,LOW);
   }
 }
+
 
